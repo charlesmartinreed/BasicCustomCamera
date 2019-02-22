@@ -12,6 +12,7 @@
 		8C63F3BC22209188008AC80F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8C63F3BA22209188008AC80F /* Main.storyboard */; };
 		8C63F3BE2220918B008AC80F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8C63F3BD2220918B008AC80F /* Assets.xcassets */; };
 		8C63F3C12220918B008AC80F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8C63F3BF2220918B008AC80F /* LaunchScreen.storyboard */; };
+		8C63F3C9222095E4008AC80F /* PhotoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C63F3C8222095E4008AC80F /* PhotoViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		8C63F3BD2220918B008AC80F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8C63F3C02220918B008AC80F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8C63F3C22220918B008AC80F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8C63F3C8222095E4008AC80F /* PhotoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +58,7 @@
 			children = (
 				8C63F3B622209188008AC80F /* AppDelegate.swift */,
 				8C63F3B822209188008AC80F /* ViewController.swift */,
+				8C63F3C8222095E4008AC80F /* PhotoViewController.swift */,
 				8C63F3BA22209188008AC80F /* Main.storyboard */,
 				8C63F3BD2220918B008AC80F /* Assets.xcassets */,
 				8C63F3BF2220918B008AC80F /* LaunchScreen.storyboard */,
@@ -137,6 +140,7 @@
 			files = (
 				8C63F3B922209188008AC80F /* ViewController.swift in Sources */,
 				8C63F3B722209188008AC80F /* AppDelegate.swift in Sources */,
+				8C63F3C9222095E4008AC80F /* PhotoViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
