@@ -19,8 +19,10 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         didSet {
             if isCapturing {
                 animateView(animatableView: recordingView, startRunning: true)
+                stopButton.isHidden = false
             } else if !isCapturing {
                 animateView(animatableView: recordingView, startRunning: false)
+                stopButton.isHidden = true
             }
         }
     }
@@ -65,6 +67,16 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         return recordingView
     }()
     
+    lazy var stopButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.isHidden = true
+        button.setImage(#imageLiteral(resourceName: "stopButton"), for: .normal)
+        button.addTarget(self, action: #selector(stopRecordingFromBuffer), for: .touchUpInside)
+        
+        return button
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addSubview(videoPreviewView)
@@ -93,6 +105,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private func setupUI() {
         view.addSubview(recordingView)
         view.addSubview(cameraButton)
+        view.addSubview(stopButton)
         
         let cameraButtonConstraints: [NSLayoutConstraint] = [
             cameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
@@ -108,8 +121,16 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             recordingView.widthAnchor.constraint(equalToConstant: 30)
         ]
         
+        let stopButtonConstraints: [NSLayoutConstraint] = [
+            stopButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
+            stopButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stopButton.heightAnchor.constraint(equalToConstant: 75),
+            stopButton.widthAnchor.constraint(equalToConstant: 75)
+        ]
+        
         NSLayoutConstraint.activate(recordingViewConstraints)
         NSLayoutConstraint.activate(cameraButtonConstraints)
+        NSLayoutConstraint.activate(stopButtonConstraints)
 
     }
     
@@ -185,7 +206,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
         
         animatableView.layer.add(anim, forKey: "backgroundColor")
-        
     }
     
     func streamImagesFromSampleBuffer(buffer: CMSampleBuffer?) {
@@ -193,7 +213,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         print("video chosen")
     }
     
-    func endRecording() {
+    @objc func stopRecordingFromBuffer() {
         isCapturing = false
         captureSession?.stopRunning()
     }
