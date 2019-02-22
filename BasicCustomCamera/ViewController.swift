@@ -32,9 +32,13 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         return previewLayer
     }()
     
-    //let captureDevice: AVCaptureDevice!
+    lazy var videoPreviewView: UIView = {
+       let previewView = UIView(frame: view.frame)
+        previewView.layer.backgroundColor = UIColor.orange.cgColor
+        return previewView
+    }()
     
-    let cameraButton: UIButton = {
+    lazy var cameraButton: UIButton = {
        let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(#imageLiteral(resourceName: "cameraIcon"), for: .normal)
@@ -45,8 +49,9 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.addSubview(videoPreviewView)
+        
         navigationController?.navigationBar.isHidden = true
-        view.backgroundColor = .white
         
         setupUI()
         beginSession()
@@ -58,23 +63,23 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        previewLayer?.frame = view.frame
+        previewLayer?.frame = videoPreviewView.frame
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(true)
+        super.viewDidAppear(animated)
         guard let previewLayer = previewLayer else { return }
-        view.layer.addSublayer(previewLayer)
+        videoPreviewView.layer.addSublayer(previewLayer)
     }
     
     private func setupUI() {
-       view.addSubview(cameraButton)
+        view.addSubview(cameraButton)
         
         let cameraButtonConstraints: [NSLayoutConstraint] = [
             cameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
-            cameraButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8),
-            cameraButton.heightAnchor.constraint(equalToConstant: 50),
-            cameraButton.widthAnchor.constraint(equalToConstant: 50)
+            cameraButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            cameraButton.heightAnchor.constraint(equalToConstant: 75),
+            cameraButton.widthAnchor.constraint(equalToConstant: 75)
         ]
         NSLayoutConstraint.activate(cameraButtonConstraints)
     }
@@ -85,7 +90,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             print("Problem initializing session")
             return
         }
-        
+        //MARK:- AVCaptureSession input
         do {
             let deviceInput = try AVCaptureDeviceInput(device: captureDevice)
             session.beginConfiguration()
@@ -94,7 +99,10 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 session.addInput(deviceInput)
             }
             
+        //MARK:- AVCaptureSession input
             let output = AVCaptureVideoDataOutput()
+            
+            //dict needs a pixel format key and pixel format
             output.videoSettings = [String(kCVPixelBufferPixelFormatTypeKey) : Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)]
             output.alwaysDiscardsLateVideoFrames = true
             
