@@ -12,7 +12,9 @@ import AVFoundation
 class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     //MARK:- AV Properties
+    //need a capture device, preview layer, session
     var captureSession: AVCaptureSession?
+    
     var backCamera: AVCaptureDevice? = {
        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
     }()
@@ -21,7 +23,14 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
     }()
     
-    //let captureLayer = CALayer()
+    lazy var previewLayer: AVCaptureVideoPreviewLayer? = {
+        guard let captureSession = self.captureSession else { return nil }
+        
+        var previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+        previewLayer.videoGravity = .resizeAspectFill
+        
+        return previewLayer
+    }()
     
     //let captureDevice: AVCaptureDevice!
     
@@ -45,6 +54,17 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
 //        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(handleCameraButtonTapped))
         
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        previewLayer?.frame = view.frame
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(true)
+        guard let previewLayer = previewLayer else { return }
+        view.layer.addSublayer(previewLayer)
     }
     
     private func setupUI() {
