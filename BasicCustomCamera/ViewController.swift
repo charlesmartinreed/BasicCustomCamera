@@ -280,7 +280,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             return
         }
         
-        
         //Get new input
         var newCamera: AVCaptureDevice! = nil
         if let input = currentCameraInput as? AVCaptureDeviceInput {
@@ -292,12 +291,11 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
         
         //Add input to session
-        var err: NSError?
         var newVideoInput: AVCaptureDeviceInput!
         do {
             newVideoInput = try AVCaptureDeviceInput(device: newCamera)
-        } catch let err1 as NSError {
-            err = err1
+        } catch let err as NSError {
+            NSLog("Error adding input: %@", err.localizedDescription)
             newVideoInput = nil
         }
         
@@ -307,9 +305,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             }
         }
         
-        if newVideoInput == nil || err != nil {
-            print("Error creating capture device input: \(err?.localizedDescription)")
-        } else {
+        if newVideoInput != nil {
             captureSession.addInput(newVideoInput)
         }
         
