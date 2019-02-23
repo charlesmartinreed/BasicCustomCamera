@@ -11,21 +11,28 @@ import AVFoundation
 
 class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     
+    //MARK:- Properties
+    let photoVC = PhotoViewController()
+    var takenPhoto: UIImage!
+    
     //MARK:- AV Properties
     //need a capture device, preview layer, session
     var captureSession: AVCaptureSession?
     
-    var isCapturing: Bool = false {
+    
+    var isCapturingVideo: Bool = false {
         didSet {
-            if isCapturing {
+            if isCapturingVideo {
                 animateView(animatableView: recordingView, startRunning: true)
                 stopButton.isHidden = false
-            } else if !isCapturing {
+            } else if !isCapturingVideo {
                 animateView(animatableView: recordingView, startRunning: false)
                 stopButton.isHidden = true
             }
         }
     }
+    
+    var isTakingPhoto: Bool = false
     
     var backCamera: AVCaptureDevice? = {
        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -86,6 +93,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         setupUI()
         beginSession()
         captureSession?.startRunning()
+        print("capture session started")
         
 //        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(handleCameraButtonTapped))
         
@@ -167,24 +175,27 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         } catch let error {
             print("Error: \(error.localizedDescription)")
         }
+        
     }
     
     @objc private func handleCameraButtonTapped() {
         let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
 
         let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
-            self.getImageFromSampleBuffer(buffer: nil)
+            self.isTakingPhoto = true
             self.dismiss(animated: true, completion: nil)
+            print("isTakingPhoto is: \(self.isTakingPhoto)")
         }
+        
         let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
-            self.streamImagesFromSampleBuffer(buffer: nil)
+            self.isCapturingVideo = true
             self.dismiss(animated: true, completion: nil)
         }
 
         actionSheet.addAction(choicePhoto)
         actionSheet.addAction(choiceVideo)
         present(actionSheet, animated: true, completion: nil)
-        self.navigationController?.pushViewController(PhotoViewController(), animated: true)
+        //self.navigationController?.pushViewController(PhotoViewController(), animated: true)
     }
     
     //MARK:- Button animation
@@ -208,24 +219,65 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         animatableView.layer.add(anim, forKey: "backgroundColor")
     }
     
-    func streamImagesFromSampleBuffer(buffer: CMSampleBuffer?) {
-        isCapturing = true
-        print("video chosen")
+    func streamImagesFromSampleBuffer(buffer: CMSampleBuffer) {
+        isCapturingVideo = true
+        
     }
     
     @objc func stopRecordingFromBuffer() {
-        isCapturing = false
+        isCapturingVideo = false
         captureSession?.stopRunning()
     }
     
-    func getImageFromSampleBuffer(buffer: CMSampleBuffer?) {
-        print("photo chosen")
+func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
+        print("conversion begins")
+        let cIImage = CIImage(cvImageBuffer: buffer)
+        let context = CIContext()
+            
+        let imageRect = CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer))
+            
+        //CI ->  CG -> UI
+        if let image = context.createCGImage(cIImage, from: imageRect) {
+            print("converted image")
+            return UIImage(cgImage: image, scale: UIScreen.main.scale, orientation: .right)
+            }
+
+        print("could not get image")
+        return nil
     }
     
     func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        if isCapturing {
-            //get an aimage
+        
+        if isTakingPhoto {
+            if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                if let image = getImageFromSampleBuffer(buffer: pixelBuffer) {
+                    photoVC.takenPhoto = image
+                    
+                    DispatchQueue.main.async {
+                        print("pushing to PhotoVC")
+                        self.navigationController?.pushViewController(self.photoVC, animated: true)
+                        self.captureSession?.stopRunning()
+                        print("stopped session")
+                    }
+                }
+                
+            }
         }
+        
+//        if isTakingPhoto {
+//            isTakingPhoto = false
+//            getImageFromSampleBuffer(buffer: pixelBuffer)
+//        }
+//        if isTakingPhoto {
+//            print("attempting to make photo")
+//            isTakingPhoto = false //so we only get one image
+//            if let image = self.getImageFromSampleBuffer(buffer: pixelBuffer) {
+//                //display on the PhotoVC
+//                photoVC.takenPhoto = image
+//                print("attempting to push")
+//                self.navigationController?.pushViewController(photoVC, animated: true)
+//            }
+//        }
     }
 }
 

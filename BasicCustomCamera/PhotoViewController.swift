@@ -9,13 +9,13 @@
 import UIKit
 
 class PhotoViewController: UIViewController {
-
+    
     var takenPhoto: UIImage?
     
     lazy var imageView: UIImageView = {
         
         let imageView = UIImageView()
-        imageView.backgroundColor = UIColor.orange
+        //imageView.backgroundColor = UIColor.orange
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
         imageView.isUserInteractionEnabled = true
