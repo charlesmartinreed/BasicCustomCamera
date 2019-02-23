@@ -267,15 +267,64 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
     
     @objc private func handleFlipCamera() {
-        captureDeviceIsFrontCam.toggle() //starts at true
-        print("flipping")
-        
-//        captureSession.beginConfiguration()
-//        if captureDeviceIsFrontCam {
-//
-//        }
-        
+        switchCamera()
     }
+    
+    func switchCamera() {
+        //Change camera source
+        //Indicate that some changes will be made to the session
+        captureSession.beginConfiguration()
+        
+        //Remove existing input
+        guard let currentCameraInput: AVCaptureInput = captureSession.inputs.first else {
+            return
+        }
+        
+        
+        //Get new input
+        var newCamera: AVCaptureDevice! = nil
+        if let input = currentCameraInput as? AVCaptureDeviceInput {
+            if (input.device.position == .back) {
+                newCamera = cameraWithPosition(position: .front)
+            } else {
+                newCamera = cameraWithPosition(position: .back)
+            }
+        }
+        
+        //Add input to session
+        var err: NSError?
+        var newVideoInput: AVCaptureDeviceInput!
+        do {
+            newVideoInput = try AVCaptureDeviceInput(device: newCamera)
+        } catch let err1 as NSError {
+            err = err1
+            newVideoInput = nil
+        }
+        
+        if let inputs = captureSession.inputs as? [AVCaptureDeviceInput] {
+            for input in inputs {
+                captureSession.removeInput(input)
+            }
+        }
+        
+        if newVideoInput == nil || err != nil {
+            print("Error creating capture device input: \(err?.localizedDescription)")
+        } else {
+            captureSession.addInput(newVideoInput)
+        }
+        
+        //Commit all the configuration changes at once
+        captureSession.commitConfiguration()
+    }
+        
+    // Find a camera with the specified AVCaptureDevicePosition, returning nil if one is not found
+    func cameraWithPosition(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: .unspecified).devices
+        
+        
+        return discoverySession.filter { $0.position == position }.first ?? nil
+    }
+    
     
     @objc private func handleCameraButtonTapped() {
         let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
