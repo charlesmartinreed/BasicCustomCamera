@@ -4,6 +4,10 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access will be used to take simple photos to be stored locally.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Library access is used to store your saved videos and photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is used to record the audio for your videos.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>

@@ -9,7 +9,7 @@
 import UIKit
 import AVFoundation
 
-class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureFileOutputRecordingDelegate {
     
     //MARK:- Properties
     let photoVC = PhotoViewController()
@@ -18,7 +18,12 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     //MARK:- AV Properties
     //need a capture device, preview layer, session
     var captureSession: AVCaptureSession?
+    var photoFileOutput: AVCapturePhotoOutput?
+    var videoFileOutput: AVCaptureMovieFileOutput?
     
+    lazy var recordingDelegate: AVCaptureFileOutputRecordingDelegate = {
+        return self
+    }()
     
     var isCapturingVideo: Bool = false {
         didSet {
@@ -34,13 +39,18 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     var isTakingPhoto: Bool = false
     
-    var backCamera: AVCaptureDevice? = {
-       return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-    }()
+//    var backCamera: AVCaptureDevice? = {
+//       return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+//    }()
     
     var frontCamera: AVCaptureDevice? = {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
     }()
+    
+    var microphone: AVCaptureDevice? = {
+        return AVCaptureDevice.default(for: .audio)
+    }()
+    
     
     lazy var previewLayer: AVCaptureVideoPreviewLayer? = {
         guard let captureSession = self.captureSession else { return nil }
@@ -104,6 +114,11 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         previewLayer?.frame = videoPreviewView.frame
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         guard let previewLayer = previewLayer else { return }
@@ -144,34 +159,59 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     private func beginSession() {
         captureSession = AVCaptureSession()
-        guard let session = captureSession, let captureDevice = frontCamera else  {
-            print("Problem initializing session")
-            return
-        }
+        videoFileOutput = AVCaptureMovieFileOutput()
+        photoFileOutput = AVCapturePhotoOutput()
+        
+        guard let session = captureSession,
+            let captureDevice = frontCamera,
+            let videoOutput = videoFileOutput,
+            let photoOutput = photoFileOutput,
+            let micDevice = microphone
+            else  {
+                print("Problem initializing session")
+                return
+            }
+        
         //MARK:- AVCaptureSession input
         do {
-            let deviceInput = try AVCaptureDeviceInput(device: captureDevice)
+            let videoInput = try AVCaptureDeviceInput(device: captureDevice)
+            let audioInput = try AVCaptureDeviceInput(device: micDevice)
+            
             session.beginConfiguration()
             
-            if session.canAddInput(deviceInput) {
-                session.addInput(deviceInput)
+            if session.canAddInput(videoInput) {
+                session.addInput(videoInput)
             }
             
-        //MARK:- AVCaptureSession input
+            if session.canAddInput(audioInput) {
+                session.addInput(audioInput)
+            }
+            
+        //MARK:- AVCaptureSession output
             let output = AVCaptureVideoDataOutput()
             
             //dict needs a pixel format key and pixel format
             output.videoSettings = [String(kCVPixelBufferPixelFormatTypeKey) : Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)]
+            
             output.alwaysDiscardsLateVideoFrames = true
             
             if session.canAddOutput(output) {
                 session.addOutput(output)
             }
             
+//            if session.canAddOutput(videoOutput) {
+//                session.addOutput(videoOutput)
+//            }
+//
+//            if session.canAddOutput(photoOutput) {
+//                session.addOutput(photoOutput)
+//            }
+            
         //MARK:- Setup Queue and Buffer Delegate
             session.commitConfiguration()
             let queue = DispatchQueue(label: "basic-camera-app")
             output.setSampleBufferDelegate(self, queue: queue)
+            
         } catch let error {
             print("Error: \(error.localizedDescription)")
         }
@@ -180,23 +220,22 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     @objc private func handleCameraButtonTapped() {
         self.isTakingPhoto = true
-//        let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
-//
-//        let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
-//            self.isTakingPhoto = true
-//            self.dismiss(animated: true, completion: nil)
-//            print("isTakingPhoto is: \(self.isTakingPhoto)")
-//        }
-//
-//        let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
-//            self.isCapturingVideo = true
-//            self.dismiss(animated: true, completion: nil)
-//        }
-//
-//        actionSheet.addAction(choicePhoto)
-//        actionSheet.addAction(choiceVideo)
-//        present(actionSheet, animated: true, completion: nil)
-        //self.navigationController?.pushViewController(PhotoViewController(), animated: true)
+        let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
+
+        let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
+            self.isTakingPhoto = true
+            print("isTakingPhoto is: \(self.isTakingPhoto)")
+        }
+
+        let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
+            self.isCapturingVideo = true
+        }
+
+        actionSheet.addAction(choicePhoto)
+        actionSheet.addAction(choiceVideo)
+        present(actionSheet, animated: true, completion: nil)
+        
+        //navigationController?.pushViewController(photoVC, animated: true)
     }
     
     //MARK:- Button animation
@@ -222,7 +261,12 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     //MARK:- VIDEO functions
     func streamImagesFromSampleBuffer(buffer: CMSampleBuffer) {
-        isCapturingVideo = true
+        if isCapturingVideo {
+            if let movieFileurl = URL(string: "") {
+                videoFileOutput?.startRecording(to: movieFileurl, recordingDelegate: self)
+            }
+            
+        }
         
     }
     
@@ -255,33 +299,18 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
             isTakingPhoto = false
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
                 if let image = getImageFromSampleBuffer(buffer: pixelBuffer) {
-                    photoVC.takenPhoto = image
+                    self.takenPhoto = image
+                    photoVC.takenPhoto = takenPhoto
                     DispatchQueue.main.async {
-                        self.navigationController?.pushViewController(self.photoVC, animated: true)
+                    self.navigationController?.pushViewController(self.photoVC, animated: true)
                     }
                 }
             }
         }
     }
     
-    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        
-        
-        
-//        if isTakingPhoto {
-//            isTakingPhoto = false
-//            getImageFromSampleBuffer(buffer: pixelBuffer)
-//        }
-//        if isTakingPhoto {
-//            print("attempting to make photo")
-//            isTakingPhoto = false //so we only get one image
-//            if let image = self.getImageFromSampleBuffer(buffer: pixelBuffer) {
-//                //display on the PhotoVC
-//                photoVC.takenPhoto = image
-//                print("attempting to push")
-//                self.navigationController?.pushViewController(photoVC, animated: true)
-//            }
-//        }
+    func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        //receives callbacks when actua recording starts and stops
     }
 }
 

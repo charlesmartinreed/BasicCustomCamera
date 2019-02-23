@@ -15,7 +15,6 @@ class PhotoViewController: UIViewController {
     lazy var imageView: UIImageView = {
         
         let imageView = UIImageView()
-        //imageView.backgroundColor = UIColor.orange
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
         imageView.isUserInteractionEnabled = true
@@ -46,15 +45,6 @@ class PhotoViewController: UIViewController {
         return label
     }()
     
-//    var animationIsFinished: Bool = false {
-//        didSet {
-//            if true {
-//                instructionsLabel.isHidden = true
-//                print("hide label")
-//            }
-//        }
-//    }
-    
     override var prefersStatusBarHidden: Bool {
         return true
     }
@@ -63,11 +53,17 @@ class PhotoViewController: UIViewController {
         super.viewDidLoad()
         self.setNeedsStatusBarAppearanceUpdate()
         
-        if let availableImage = takenPhoto {
-            imageView.image = availableImage
-        }
-        
         setupUI()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let photo = takenPhoto {
+            imageView.image = photo
+        }
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        imageView.image = nil
     }
     
     private func setupUI() {
@@ -125,7 +121,22 @@ class PhotoViewController: UIViewController {
     }
     
     private func saveImageLocally() {
-        print("swipe right. Save function coming")
+        print("swiped right")
+        UIImageWriteToSavedPhotosAlbum(takenPhoto!, self, #selector(image(_:didFinishSavingWithError:contextInfo:)), nil)
+    }
+    
+    @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        if let error = error {
+            let ac = UIAlertController(title: "Save Error", message: error.localizedDescription, preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            present(ac, animated: true, completion: nil)
+        } else {
+            let ac = UIAlertController(title: "Save Successful", message: "Your image has been saved to your Photo Library", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            present(ac, animated: true, completion: nil)
+        }
+        
+        self.navigationController?.popViewController(animated: true)
     }
     
     @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
@@ -139,6 +150,7 @@ class PhotoViewController: UIViewController {
         default:
             break
         }
+
     }
 
     /*
