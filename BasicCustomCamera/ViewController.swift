@@ -20,6 +20,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     var captureSession = AVCaptureSession()
     var photoFileOutput = AVCaptureVideoDataOutput()
     var videoFileOutput = AVCaptureMovieFileOutput()
+    var capturedPixelBuffer: CVPixelBuffer?
     
     var filePathURL: URL?
     let filePathUUID = UUID().uuidString
@@ -336,6 +337,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     //MARK:- IMAGE FUNCTIONS
 func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
         print("conversion begins")
+    
         let cIImage = CIImage(cvImageBuffer: buffer)
         let context = CIContext()
             
@@ -356,7 +358,8 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
         if isTakingPhoto {
             isTakingPhoto = false
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-                if let image = getImageFromSampleBuffer(buffer: pixelBuffer) {
+                capturedPixelBuffer = pixelBuffer //retain
+                if let image = getImageFromSampleBuffer(buffer: capturedPixelBuffer!) {
                     DispatchQueue.main.async {
                         self.takenPhoto = image
                         self.photoVC.takenPhoto = self.takenPhoto
@@ -365,6 +368,10 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
                 }
             }
         }
+    }
+    
+    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        
     }
     
     func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
@@ -382,9 +389,11 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
             
             captureSession.beginConfiguration()
             captureSession.removeOutput(videoFileOutput)
+            captureSession.addOutput(photoFileOutput)
             captureSession.commitConfiguration()
             
             print("video output removed")
+            print("photo output removed")
             print(String(describing: outputFileURL))
         }
     }
