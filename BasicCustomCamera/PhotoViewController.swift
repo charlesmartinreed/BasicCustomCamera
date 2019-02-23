@@ -23,16 +23,37 @@ class PhotoViewController: UIViewController {
         //this will actually be used to navigate, rather than relying upon the nav controller's back button
         let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
         swipeLeft.direction = .left
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+        swipeRight.direction = .right
         
         imageView.addGestureRecognizer(swipeLeft)
+        imageView.addGestureRecognizer(swipeRight)
         
         return imageView
         
     }()
     
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .lightContent
-    }
+    var instructionsLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Swipe Left to Discard, Swipe Right to Save"
+        label.font = UIFont.boldSystemFont(ofSize: 24)
+        label.textAlignment = .center
+        label.minimumScaleFactor = 0.5
+        label.numberOfLines = 0
+        label.textColor = .white
+        
+        return label
+    }()
+    
+//    var animationIsFinished: Bool = false {
+//        didSet {
+//            if true {
+//                instructionsLabel.isHidden = true
+//                print("hide label")
+//            }
+//        }
+//    }
     
     override var prefersStatusBarHidden: Bool {
         return true
@@ -51,6 +72,7 @@ class PhotoViewController: UIViewController {
     
     private func setupUI() {
         view.addSubview(imageView)
+        view.addSubview(instructionsLabel)
         
         let imageViewConstraints: [NSLayoutConstraint] = [
             imageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -59,12 +81,63 @@ class PhotoViewController: UIViewController {
             imageView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             ]
         
+        let instructionConstraints: [NSLayoutConstraint] = [
+            instructionsLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            instructionsLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            instructionsLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            instructionsLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            instructionsLabel.heightAnchor.constraint(equalToConstant: 60)
+        ]
+        
         NSLayoutConstraint.activate(imageViewConstraints)
+        NSLayoutConstraint.activate(instructionConstraints)
+        
+        //animateOut(label: instructionsLabel)
+        animateInstructionLabel()
+    }
+    
+    private func animateOut(label: UIView) {
+//        for view in view.subviews {
+//            if view is UILabel {
+//                UIV
+//            }
+//        }
+//        let oldValue = label.layer.opacity
+//        let newValue = 0
+//
+//        let anim = CABasicAnimation(keyPath: "opacity")
+//        anim.fromValue = oldValue
+//        anim.toValue = newValue
+//        anim.duration = 2.0
+//        anim.repeatCount = 0
+//        anim.timingFunction = CAMediaTimingFunction(name: .easeOut)
+//
+//        label.layer.add(anim, forKey: "opacity")
+////        animationIsFinished = true
+    }
+    
+    private func animateInstructionLabel() {
+        UIView.animate(withDuration: 4.0, delay: 0, options: .curveEaseOut, animations: {
+            self.instructionsLabel.alpha = 0
+        }) { (_) in
+            self.instructionsLabel.removeFromSuperview()
+        }
+    }
+    
+    private func saveImageLocally() {
+        print("swipe right. Save function coming")
     }
     
     @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
-        if gesture.direction == .left {
-            navigationController?.popViewController(animated: true)
+        
+        switch gesture.direction {
+        case .left:
+            print("left")
+            self.navigationController?.popViewController(animated: true)
+        case .right:
+            saveImageLocally()
+        default:
+            break
         }
     }
 
