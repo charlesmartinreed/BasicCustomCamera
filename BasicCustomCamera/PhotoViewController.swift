@@ -123,6 +123,7 @@ class PhotoViewController: UIViewController {
     private func saveImageLocally() {
         print("swiped right")
         UIImageWriteToSavedPhotosAlbum(takenPhoto!, self, #selector(image(_:didFinishSavingWithError:contextInfo:)), nil)
+        self.navigationController?.popViewController(animated: true)
     }
     
     @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
@@ -136,7 +137,6 @@ class PhotoViewController: UIViewController {
             present(ac, animated: true, completion: nil)
         }
         
-        self.navigationController?.popViewController(animated: true)
     }
     
     @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
