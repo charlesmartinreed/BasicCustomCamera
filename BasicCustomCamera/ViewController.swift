@@ -24,12 +24,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     var filePathURL: URL?
     let filePathUUID = UUID().uuidString
-//    let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-//    filePath = documentsURL.appendingPathComponent("temp.mp4")
-    
-//    lazy var recordingDelegate: AVCaptureFileOutputRecordingDelegate = {
-//        return self
-//    }()
     
     var isCapturingVideo: Bool = false {
         didSet {
@@ -43,6 +37,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         }
     }
     
+    var captureDeviceIsFrontCam: Bool = true
     var isTakingPhoto: Bool = false
     
 //    var backCamera: AVCaptureDevice? = {
@@ -51,6 +46,10 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     var frontCamera: AVCaptureDevice? = {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+    }()
+    
+    var backCamera: AVCaptureDevice? = {
+        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
     }()
     
     var microphone: AVCaptureDevice? = {
@@ -76,6 +75,15 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(#imageLiteral(resourceName: "cameraIcon"), for: .normal)
         button.addTarget(self, action: #selector(handleCameraButtonTapped), for: .touchUpInside)
+        
+        return button
+    }()
+    
+    lazy var flipCameraButton: UIButton = {
+       let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(#imageLiteral(resourceName: "flipCamera"), for: .normal)
+        button.addTarget(self, action: #selector(handleFlipCamera), for: .touchUpInside)
         
         return button
     }()
@@ -132,6 +140,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     private func setupUI() {
         view.addSubview(recordingView)
         view.addSubview(cameraButton)
+        view.addSubview(flipCameraButton)
         view.addSubview(stopButton)
         
         let cameraButtonConstraints: [NSLayoutConstraint] = [
@@ -139,6 +148,13 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             cameraButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
             cameraButton.heightAnchor.constraint(equalToConstant: 75),
             cameraButton.widthAnchor.constraint(equalToConstant: 75)
+        ]
+        
+        let flipCameraButtonConstraints: [NSLayoutConstraint] = [
+            flipCameraButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
+            flipCameraButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            flipCameraButton.heightAnchor.constraint(equalToConstant: 75),
+            flipCameraButton.widthAnchor.constraint(equalToConstant: 75)
         ]
         
         let recordingViewConstraints: [NSLayoutConstraint] = [
@@ -155,9 +171,19 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             stopButton.widthAnchor.constraint(equalToConstant: 75)
         ]
         
-        NSLayoutConstraint.activate(recordingViewConstraints)
-        NSLayoutConstraint.activate(cameraButtonConstraints)
-        NSLayoutConstraint.activate(stopButtonConstraints)
+        let uiconstraints = [recordingViewConstraints, cameraButtonConstraints, stopButtonConstraints, flipCameraButtonConstraints]
+        
+        uiconstraints.forEach { (constraint) in
+            NSLayoutConstraint.activate(constraint)
+        }
+//        for constraint in uiconstraints {
+//            NSLayoutConstraint.activate(constraint)
+//        }
+        
+//        NSLayoutConstraint.activate(recordingViewConstraints)
+//        NSLayoutConstraint.activate(cameraButtonConstraints)
+//        NSLayoutConstraint.activate(stopButtonConstraints)
+//        NSLayoutConstraint.activate(flipCameraButtonConstraints)
 
     }
     
@@ -165,15 +191,26 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
         photoFileOutput = AVCaptureVideoDataOutput()
         
-        guard let captureDevice = frontCamera, let micDevice = microphone
+        guard let micDevice = microphone
             else {
-                print("Problem initializing session")
+                print("Problem initializing microphon")
                 return
             }
         
+        guard let frontCamera = frontCamera else {
+            print("Problem intializing front cam")
+            return
+        }
+        
+        guard let backCamera = backCamera else {
+            print("Problem intializing back cam")
+            return
+        }
+        
         //MARK:- AVCaptureSession input
         do {
-            let videoInput = try AVCaptureDeviceInput(device: captureDevice)
+            let videoInput = captureDeviceIsFrontCam ? try AVCaptureDeviceInput(device: frontCamera) : try AVCaptureDeviceInput(device: backCamera)
+            //let videoInput = try AVCaptureDeviceInput(device: captureDevice)
             let audioInput = try AVCaptureDeviceInput(device: micDevice)
             
             captureSession.beginConfiguration()
@@ -229,6 +266,17 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
     }
     
+    @objc private func handleFlipCamera() {
+        captureDeviceIsFrontCam.toggle() //starts at true
+        print("flipping")
+        
+//        captureSession.beginConfiguration()
+//        if captureDeviceIsFrontCam {
+//
+//        }
+        
+    }
+    
     @objc private func handleCameraButtonTapped() {
         let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
 
@@ -261,9 +309,12 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 self.startRecordingVideoFromSampleBuffer()
             }
         }
+        
+        let choiceCancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
 
         actionSheet.addAction(choicePhoto)
         actionSheet.addAction(choiceVideo)
+        actionSheet.addAction(choiceCancel)
         present(actionSheet, animated: true, completion: nil)
         
     }
