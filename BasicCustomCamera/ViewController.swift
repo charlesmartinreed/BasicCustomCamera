@@ -179,22 +179,23 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
     
     @objc private func handleCameraButtonTapped() {
-        let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
-
-        let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
-            self.isTakingPhoto = true
-            self.dismiss(animated: true, completion: nil)
-            print("isTakingPhoto is: \(self.isTakingPhoto)")
-        }
-        
-        let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
-            self.isCapturingVideo = true
-            self.dismiss(animated: true, completion: nil)
-        }
-
-        actionSheet.addAction(choicePhoto)
-        actionSheet.addAction(choiceVideo)
-        present(actionSheet, animated: true, completion: nil)
+        self.isTakingPhoto = true
+//        let actionSheet = UIAlertController(title: "Take a photo or a video?", message: nil, preferredStyle: .actionSheet)
+//
+//        let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
+//            self.isTakingPhoto = true
+//            self.dismiss(animated: true, completion: nil)
+//            print("isTakingPhoto is: \(self.isTakingPhoto)")
+//        }
+//
+//        let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
+//            self.isCapturingVideo = true
+//            self.dismiss(animated: true, completion: nil)
+//        }
+//
+//        actionSheet.addAction(choicePhoto)
+//        actionSheet.addAction(choiceVideo)
+//        present(actionSheet, animated: true, completion: nil)
         //self.navigationController?.pushViewController(PhotoViewController(), animated: true)
     }
     
@@ -219,6 +220,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         animatableView.layer.add(anim, forKey: "backgroundColor")
     }
     
+    //MARK:- VIDEO functions
     func streamImagesFromSampleBuffer(buffer: CMSampleBuffer) {
         isCapturingVideo = true
         
@@ -226,9 +228,10 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     @objc func stopRecordingFromBuffer() {
         isCapturingVideo = false
-        captureSession?.stopRunning()
+        //captureSession?.stopRunning()
     }
     
+    //MARK:- IMAGE FUNCTIONS
 func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
         print("conversion begins")
         let cIImage = CIImage(cvImageBuffer: buffer)
@@ -246,23 +249,24 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
         return nil
     }
     
-    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        
+    //MARK:- Delegate methods
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         if isTakingPhoto {
+            isTakingPhoto = false
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
                 if let image = getImageFromSampleBuffer(buffer: pixelBuffer) {
                     photoVC.takenPhoto = image
-                    
                     DispatchQueue.main.async {
-                        print("pushing to PhotoVC")
                         self.navigationController?.pushViewController(self.photoVC, animated: true)
-                        self.captureSession?.stopRunning()
-                        print("stopped session")
                     }
                 }
-                
             }
         }
+    }
+    
+    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        
+        
         
 //        if isTakingPhoto {
 //            isTakingPhoto = false
