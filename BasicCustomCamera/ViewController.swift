@@ -17,7 +17,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     //MARK:- AV Properties
     //need a capture device, preview layer, session
-    var captureSession: AVCaptureSession?
+    var captureSession = AVCaptureSession()
     var photoFileOutput = AVCaptureVideoDataOutput()
     var videoFileOutput = AVCaptureMovieFileOutput()
     
@@ -58,8 +58,6 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     
     lazy var previewLayer: AVCaptureVideoPreviewLayer? = {
-        guard let captureSession = self.captureSession else { return nil }
-        
         var previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
         previewLayer.videoGravity = .resizeAspectFill
         
@@ -108,7 +106,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         
         setupUI()
         beginSession()
-        captureSession?.startRunning()
+        captureSession.startRunning()
         
 //        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(handleCameraButtonTapped))
         
@@ -163,13 +161,11 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     }
     
     private func beginSession() {
-        captureSession = AVCaptureSession()
+        
         photoFileOutput = AVCaptureVideoDataOutput()
         
-        guard let session = captureSession,
-            let captureDevice = frontCamera,
-            let micDevice = microphone
-            else  {
+        guard let captureDevice = frontCamera, let micDevice = microphone
+            else {
                 print("Problem initializing session")
                 return
             }
@@ -179,14 +175,14 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             let videoInput = try AVCaptureDeviceInput(device: captureDevice)
             let audioInput = try AVCaptureDeviceInput(device: micDevice)
             
-            session.beginConfiguration()
+            captureSession.beginConfiguration()
             
-            if session.canAddInput(videoInput) {
-                session.addInput(videoInput)
+            if captureSession.canAddInput(videoInput) {
+                captureSession.addInput(videoInput)
             }
             
-            if session.canAddInput(audioInput) {
-                session.addInput(audioInput)
+            if captureSession.canAddInput(audioInput) {
+                captureSession.addInput(audioInput)
             }
             
         //MARK:- AVCaptureSession output
@@ -208,14 +204,14 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             
             
             
-            if session.canAddOutput(photoFileOutput) {
-                session.addOutput(photoFileOutput)
+            if captureSession.canAddOutput(photoFileOutput) {
+                captureSession.addOutput(photoFileOutput)
                 print("regular output added")
             }
             
         //MARK:- Setup Queue and Buffer Delegate
-            session.sessionPreset = AVCaptureSession.Preset.high
-            session.commitConfiguration()
+            captureSession.sessionPreset = AVCaptureSession.Preset.high
+            captureSession.commitConfiguration()
             
             //setup for video recording path
             //let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -238,27 +234,27 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         let choicePhoto = UIAlertAction(title: "Photo", style: .default) { (_) in
             self.isTakingPhoto = true
             
-            self.captureSession?.beginConfiguration()
-            self.captureSession?.removeOutput(self.videoFileOutput)
+            self.captureSession.beginConfiguration()
+            self.captureSession.removeOutput(self.videoFileOutput)
             print("video output removed")
-            if self.captureSession!.canAddOutput(self.photoFileOutput) {
-                self.captureSession!.addOutput(self.photoFileOutput)
+            if self.captureSession.canAddOutput(self.photoFileOutput) {
+                self.captureSession.addOutput(self.photoFileOutput)
                 print("photo output added")
             }
-            self.captureSession?.commitConfiguration()
+            self.captureSession.commitConfiguration()
         }
 
         let choiceVideo = UIAlertAction(title: "Video", style: .default) { (_) in
             self.isCapturingVideo = true
             
-            self.captureSession?.beginConfiguration()
-            self.captureSession?.removeOutput(self.photoFileOutput)
+            self.captureSession.beginConfiguration()
+            self.captureSession.removeOutput(self.photoFileOutput)
             print("photo output removed")
-            if self.captureSession!.canAddOutput(self.videoFileOutput) {
-                self.captureSession!.addOutput(self.videoFileOutput)
+            if self.captureSession.canAddOutput(self.videoFileOutput) {
+                self.captureSession.addOutput(self.videoFileOutput)
                 print("video output added")
             }
-            self.captureSession?.commitConfiguration()
+            self.captureSession.commitConfiguration()
             
             DispatchQueue.main.async {
                 self.startRecordingVideoFromSampleBuffer()
@@ -361,16 +357,13 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
             isTakingPhoto = false
             if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
                 if let image = getImageFromSampleBuffer(buffer: pixelBuffer) {
-                    self.takenPhoto = image
-                    photoVC.takenPhoto = takenPhoto
                     DispatchQueue.main.async {
+                        self.takenPhoto = image
+                        self.photoVC.takenPhoto = self.takenPhoto
                     self.navigationController?.pushViewController(self.photoVC, animated: true)
                     }
                 }
             }
-//        } else if isCapturingVideo {
-//            print("passing to record function")
-//            startRecordingVideoFromSampleBuffer()
         }
     }
     
@@ -387,9 +380,9 @@ func getImageFromSampleBuffer(buffer: CVImageBuffer) -> UIImage? {
             guard let relativePath = filePathURL?.relativePath else { return }
             UISaveVideoAtPathToSavedPhotosAlbum(relativePath, self, #selector(video(_:didFinishSavingWithError:contextInfo:)), nil)
             
-            captureSession?.beginConfiguration()
-            captureSession?.removeOutput(videoFileOutput)
-            captureSession?.commitConfiguration()
+            captureSession.beginConfiguration()
+            captureSession.removeOutput(videoFileOutput)
+            captureSession.commitConfiguration()
             
             print("video output removed")
             print(String(describing: outputFileURL))
